@@ -17,15 +17,51 @@ Example
     imu0 = imu[0]                  # first IMU instance
     plt.plot(imu0["Time"], imu0["GyrX"])
 
-Requires: pip install pymavlink numpy
+Requires numpy and pymavlink (see requirements.txt). Running this file
+directly installs them if they are missing.
 """
 
+import importlib.util
+import subprocess
 import sys
 import warnings
 from collections import defaultdict
 
-import numpy as np
-from pymavlink import DFReader
+# Packages this script needs: {name used in `import`: name on PyPI}
+REQUIRED_PACKAGES = {"numpy": "numpy", "pymavlink": "pymavlink"}
+
+
+def ensure_dependencies(install=False):
+    """Check the required packages are installed, optionally installing them.
+
+    Installs into the Python that is running this script (sys.executable),
+    so it works whichever interpreter VS Code or the terminal is using.
+    """
+    missing = [
+        pypi_name
+        for import_name, pypi_name in REQUIRED_PACKAGES.items()
+        if importlib.util.find_spec(import_name) is None
+    ]
+    if not missing:
+        return
+
+    pip_command = [sys.executable, "-m", "pip", "install", *missing]
+
+    if not install:
+        raise ImportError(
+            f"Missing packages: {', '.join(missing)}. Install them with:\n"
+            f"    {' '.join(pip_command)}"
+        )
+
+    print(f"Installing missing packages: {', '.join(missing)}")
+    subprocess.check_call(pip_command)
+
+
+# Install when run as a script; just check (with a clear message) when imported
+ensure_dependencies(install=(__name__ == "__main__"))
+
+import numpy as np  # noqa: E402  (imported after the dependency check)
+from pymavlink import DFReader  # noqa: E402
 
 # A table is {field name: numpy array of that field's values}
 Table = dict[str, np.ndarray]
