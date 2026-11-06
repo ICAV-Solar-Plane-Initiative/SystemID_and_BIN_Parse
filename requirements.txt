@@ -1,2 +1,2 @@
-numpy
-pymavlink
+numpy>=1.24
+pymavlink>=2.4.40

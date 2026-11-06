@@ -17,48 +17,44 @@ Example
     imu0 = imu[0]                  # first IMU instance
     plt.plot(imu0["Time"], imu0["GyrX"])
 
-Requires numpy and pymavlink (see requirements.txt). Running this file
-directly installs them if they are missing.
+Requires numpy and pymavlink, installed into the project virtual
+environment by setup_env.ps1 (Windows) or setup_env.sh (bash).
 """
 
 import importlib.util
-import subprocess
 import sys
 import warnings
 from collections import defaultdict
 
-# Packages this script needs: {name used in `import`: name on PyPI}
-REQUIRED_PACKAGES = {"numpy": "numpy", "pymavlink": "pymavlink"}
+# Packages this script needs (import names, as listed in requirements.txt)
+REQUIRED_PACKAGES = ["numpy", "pymavlink"]
 
 
-def ensure_dependencies(install=False):
-    """Check the required packages are installed, optionally installing them.
-
-    Installs into the Python that is running this script (sys.executable),
-    so it works whichever interpreter VS Code or the terminal is using.
-    """
+def check_dependencies():
+    """Stop with a clear message if any required package is missing."""
     missing = [
-        pypi_name
-        for import_name, pypi_name in REQUIRED_PACKAGES.items()
-        if importlib.util.find_spec(import_name) is None
+        name for name in REQUIRED_PACKAGES
+        if importlib.util.find_spec(name) is None
     ]
     if not missing:
         return
 
-    pip_command = [sys.executable, "-m", "pip", "install", *missing]
+    in_venv = sys.prefix != sys.base_prefix
+    hint = (
+        "Install them into this environment with:\n"
+        "    python -m pip install -r requirements.txt"
+        if in_venv else
+        "You are not in the project virtual environment. From the repo root, "
+        "run setup_env.ps1 (PowerShell) or setup_env.sh (Git Bash), then "
+        "activate .venv or select it as the interpreter in VS Code."
+    )
+    raise ImportError(
+        f"Missing packages: {', '.join(missing)}\n"
+        f"Python in use: {sys.executable}\n{hint}"
+    )
 
-    if not install:
-        raise ImportError(
-            f"Missing packages: {', '.join(missing)}. Install them with:\n"
-            f"    {' '.join(pip_command)}"
-        )
 
-    print(f"Installing missing packages: {', '.join(missing)}")
-    subprocess.check_call(pip_command)
-
-
-# Install when run as a script; just check (with a clear message) when imported
-ensure_dependencies(install=(__name__ == "__main__"))
+check_dependencies()
 
 import numpy as np  # noqa: E402  (imported after the dependency check)
 from pymavlink import DFReader  # noqa: E402
